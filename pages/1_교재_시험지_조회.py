@@ -127,9 +127,18 @@ st.dataframe(
     },
 )
 
+FILTER_EXPORT_RENAME = {
+    "book_id": "자료ID", "textbook_name": "이름", "data_type": "유형",
+    "sheet": "분류", "school_level": "학교급", "grade": "학년",
+    "지역시도": "지역(시/도)", "지역구": "지역(구)", "연도": "연도", "중간기말": "중간/기말",
+    "api_item_count": "문항수", "review_done_count": "검수완료",
+    "review_pending_count": "검수미완료", "deleted_count": "삭제문항수",
+    "twin_total": "쌍둥이", "similar_total": "유사문항",
+    "collected_at": "수집일시", "review_rate": "검수완료율",
+}
 st.download_button(
     "⬇ 현재 필터 결과 CSV 다운로드",
-    data=filtered.to_csv(index=False).encode("utf-8-sig"),
+    data=filtered.rename(columns=FILTER_EXPORT_RENAME).to_csv(index=False).encode("utf-8-sig"),
     file_name="교재시험지_필터결과.csv",
     mime="text/csv",
 )
@@ -212,9 +221,16 @@ else:
         use_container_width=True, hide_index=True, height=420,
     )
 
+    ITEM_EXPORT_RENAME = {
+        **rename_map,
+        "book_id": "자료ID", "textbook_name": "이름", "sheet": "분류",
+        "other_relation_count": "기타연관", "last_review_complete_date": "검수완료일시",
+        "collected_at": "수집일시",
+    }
+    export_items = book_items.drop(columns=["page_num", "item_num_sort"])
     st.download_button(
         f"⬇ {pick_name} 문항 전체 CSV 다운로드",
-        data=book_items.to_csv(index=False).encode("utf-8-sig"),
+        data=export_items.rename(columns=ITEM_EXPORT_RENAME).to_csv(index=False).encode("utf-8-sig"),
         file_name=f"{pick_name}_문항목록.csv",
         mime="text/csv",
     )
