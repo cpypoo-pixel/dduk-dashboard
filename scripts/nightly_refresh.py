@@ -100,7 +100,42 @@ def main():
     subprocess.run([PYTHON, str(SCRIPTS_DIR / "enrich_exam_summary.py")], cwd=str(BASE_DIR), check=False)
     subprocess.run([PYTHON, str(SCRIPTS_DIR / "build_unified_data.py")], cwd=str(BASE_DIR), check=False)
 
+    push_to_github()
+
     log("===== 야간 자동 갱신 완료 =====")
+
+
+def push_to_github():
+    """새로 수집된 데이터를 GitHub(dduk-dashboard)에 올려 배포본(Streamlit Cloud)도 자동 갱신되게 한다."""
+    data_files = [
+        "data/unified_summary.csv",
+        "data/step8_all_items.csv",
+        "data/step9_all_items.csv",
+    ]
+    git = lambda *args: subprocess.run(["git", *args], cwd=str(BASE_DIR), capture_output=True, text=True, encoding="utf-8")
+
+    add_result = git("add", *data_files)
+    if add_result.returncode != 0:
+        log(f"[GitHub] git add 실패: {add_result.stderr.strip()}")
+        return
+
+    diff_result = git("diff", "--cached", "--quiet")
+    if diff_result.returncode == 0:
+        log("[GitHub] 변경된 데이터 없음 - 커밋 생략")
+        return
+
+    commit_msg = f"Nightly data refresh ({time.strftime('%Y-%m-%d')})"
+    commit_result = git("commit", "-m", commit_msg)
+    if commit_result.returncode != 0:
+        log(f"[GitHub] 커밋 실패: {commit_result.stderr.strip()}")
+        return
+
+    push_result = git("push", "origin", "main")
+    if push_result.returncode != 0:
+        log(f"[GitHub] 푸시 실패 (로컬 커밋은 완료됨, 다음 실행 때 재시도하거나 수동 push 필요): {push_result.stderr.strip()}")
+        return
+
+    log("[GitHub] 푸시 완료 - Streamlit Cloud가 자동으로 재배포합니다")
 
 
 if __name__ == "__main__":
