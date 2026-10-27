@@ -1,0 +1,12 @@
+.browser_profile/
+__pycache__/
+*.pyc
+.streamlit/secrets.toml
+
+data/*
+!data/unified_summary.csv
+!data/step8_all_items.csv
+!data/step9_all_items.csv
+!data/final_items.csv
+
+목록.xlsx
