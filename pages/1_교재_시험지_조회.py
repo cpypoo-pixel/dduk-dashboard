@@ -9,7 +9,6 @@ import streamlit as st
 from dashboard_style import inject as inject_style, apply_korean_font
 from dashboard_auth import require_login
 
-st.set_page_config(page_title="교재·시험지 조회", layout="wide", page_icon="🔍")
 require_login()
 inject_style()
 
@@ -40,12 +39,12 @@ def load_items(data_type, book_id):
 with st.spinner("데이터 불러오는 중..."):
     data = load_unified()
 
-st.title("🔍 교재·시험지 조회")
+st.title("🔍 교재·시험지 조회", anchor=False)
 st.caption(f"교재 {len(data[data['data_type']=='교재']):,}권 + 내신 시험지 {len(data[data['data_type']=='내신']):,}건 · 통합 조회")
 st.caption(f"🕒 데이터 기준 시각: {data['collected_at'].max()}")
 
 # ---------- 필터 ----------
-st.subheader("🔍 검색 / 필터")
+st.subheader("⚙️ 검색 / 필터", anchor=False)
 f1, f2, f3, f4 = st.columns(4)
 with f1:
     type_options = ["전체", "교재", "내신"]
@@ -140,7 +139,7 @@ st.divider()
 # ---------- 지역/연도별 보유 현황 (내신이 포함된 경우만) ----------
 exam_part = filtered[filtered["data_type"] == "내신"]
 if len(exam_part) > 0:
-    st.subheader("🗺️ 내신 시험지 — 지역·연도별 보유 현황")
+    st.subheader("🗺️ 내신 시험지 — 지역·연도별 보유 현황", anchor=False)
     col_a, col_b = st.columns(2)
     with col_a:
         region_dist = exam_part.groupby("지역시도").size().reset_index(name="건수").sort_values("건수", ascending=False)
@@ -159,7 +158,7 @@ if len(exam_part) > 0:
     st.divider()
 
 # ---------- 상세: 문항별 목록 ----------
-st.subheader("📄 문항 상세")
+st.subheader("📄 문항 상세", anchor=False)
 if len(filtered) == 0:
     st.info("조건에 맞는 자료가 없습니다.")
 else:

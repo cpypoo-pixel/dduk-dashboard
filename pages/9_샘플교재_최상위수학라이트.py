@@ -6,7 +6,6 @@ import pandas as pd
 import streamlit as st
 from dashboard_auth import require_login
 
-st.set_page_config(page_title="오답노트 DB 대시보드", layout="wide")
 require_login()
 
 DATA_PATH = "data/final_items.csv"
@@ -25,7 +24,7 @@ def load_data():
 
 df = load_data()
 
-st.title("오답노트 DB 대시보드")
+st.title("📘 샘플교재 — 최상위수학 라이트", anchor=False)
 st.caption(f"교재: {df['textbook_name'].iloc[0]} · 총 {len(df)}문항")
 
 # ---------- 요약 카드 ----------
@@ -39,7 +38,7 @@ c5.metric("미확인 데이터", f"{(df['data_status'] == '미확인').sum()}")
 st.divider()
 
 # ---------- 필터 ----------
-st.subheader("검색 / 필터")
+st.subheader("검색 / 필터", anchor=False)
 f1, f2, f3, f4 = st.columns(4)
 with f1:
     unit_options = ["전체"] + sorted(df["large_unit"].dropna().unique().tolist())
@@ -75,7 +74,7 @@ st.caption(f"조건에 맞는 문항: {len(filtered)}건")
 st.divider()
 
 # ---------- 단원별 집계 ----------
-st.subheader("대단원별 집계")
+st.subheader("대단원별 집계", anchor=False)
 unit_summary = (
     df.groupby("large_unit", dropna=False)
     .agg(
@@ -92,7 +91,7 @@ st.dataframe(unit_summary, use_container_width=True, hide_index=True)
 st.divider()
 
 # ---------- 쌍둥이/유사 문항 집계 ----------
-st.subheader("쌍둥이 / 유사 문항 생성 현황")
+st.subheader("쌍둥이 / 유사 문항 생성 현황", anchor=False)
 col_a, col_b = st.columns(2)
 with col_a:
     st.caption("문항당 쌍둥이 개수 분포")
@@ -109,7 +108,7 @@ with col_b:
 st.divider()
 
 # ---------- 문항별 상세 테이블 ----------
-st.subheader("문항별 상세 목록")
+st.subheader("문항별 상세 목록", anchor=False)
 display_cols = [
     "page", "question_number", "question_code", "item_review_status",
     "text_conversion_status", "question_type", "difficulty",
@@ -125,7 +124,7 @@ st.dataframe(
 )
 
 # ---------- 문항 상세 보기 ----------
-st.subheader("문항 상세 보기")
+st.subheader("문항 상세 보기", anchor=False)
 if len(filtered) > 0:
     pick = st.selectbox(
         "문항 선택 (페이지_문제번호)",
@@ -170,7 +169,7 @@ else:
 st.divider()
 
 # ---------- CSV 다운로드 ----------
-st.subheader("데이터 다운로드")
+st.subheader("데이터 다운로드", anchor=False)
 st.download_button(
     "필터링된 데이터 CSV 다운로드",
     data=filtered.to_csv(index=False).encode("utf-8-sig"),
