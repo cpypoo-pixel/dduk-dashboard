@@ -2,7 +2,7 @@
 """매일 자동 실행되어 교재+내신 데이터를 처음부터 다시 수집하고 통합 데이터를 재생성한다.
 전제: launch_persistent_browser.py로 띄운 CDP 브라우저(포트 9333)가 로그인된 채로 계속 떠 있어야 한다.
 세션이 끊겨 있으면 이 스크립트는 실패하고 로그만 남긴다(자동 로그인은 하지 않음 - 보안 원칙)."""
-import subprocess, sys, time, json
+import shutil, subprocess, sys, time, json
 from pathlib import Path
 
 BASE_DIR = Path(__file__).parent.parent
@@ -66,6 +66,11 @@ def main():
         log("[중단] 브라우저 세션이 꺼져 있어 갱신을 건너뜁니다. 수동으로 재로그인 후 다시 시도해주세요.")
         return
 
+    summary_csv = DATA_DIR / "unified_summary.csv"
+    prev_snapshot = DATA_DIR / "unified_summary_prev.csv"
+    if summary_csv.exists():
+        shutil.copy(summary_csv, prev_snapshot)
+
     ITEM_FIELDNAMES = [
         "book_id", "textbook_name", "sheet", "page", "item_num", "item_id",
         "item_kind_nm", "difficulty_nm", "is_review_status", "is_text_conversion_status",
@@ -100,6 +105,11 @@ def main():
     subprocess.run([PYTHON, str(SCRIPTS_DIR / "enrich_exam_summary.py")], cwd=str(BASE_DIR), check=False)
     subprocess.run([PYTHON, str(SCRIPTS_DIR / "build_unified_data.py")], cwd=str(BASE_DIR), check=False)
 
+    log("[비교] 전일 대비 변경사항 리포트 생성")
+    diff_result = subprocess.run([PYTHON, str(SCRIPTS_DIR / "build_diff_report.py")], cwd=str(BASE_DIR),
+                                  capture_output=True, text=True, encoding="utf-8")
+    log(diff_result.stdout.strip() if diff_result.stdout else "(diff 출력 없음)")
+
     push_to_github()
 
     log("===== 야간 자동 갱신 완료 =====")
@@ -111,7 +121,9 @@ def push_to_github():
         "data/unified_summary.csv",
         "data/step8_all_items.csv",
         "data/step9_all_items.csv",
+        "data/diff_report.csv",
     ]
+    data_files = [f for f in data_files if (BASE_DIR / f).exists()]
     git = lambda *args: subprocess.run(["git", *args], cwd=str(BASE_DIR), capture_output=True, text=True, encoding="utf-8")
 
     add_result = git("add", *data_files)

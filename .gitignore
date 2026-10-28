@@ -7,5 +7,6 @@ data/*
 !data/unified_summary.csv
 !data/step8_all_items.csv
 !data/step9_all_items.csv
+!data/diff_report.csv
 
 목록.xlsx

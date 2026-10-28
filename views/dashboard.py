@@ -2,6 +2,7 @@
 """DB 통합 대시보드 (화면 1)
 22개정 교재 + 내신 시험지 전체의 데이터 확보/구축/검수 현황을 한눈에 보여준다. 읽기 전용.
 """
+from pathlib import Path
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
@@ -87,6 +88,46 @@ with gcol2:
     )
     apply_korean_font(donut)
     st.plotly_chart(donut, use_container_width=True, theme=None, config={"displayModeBar": False})
+
+st.divider()
+
+# ---------- 전일 대비 변경사항 ----------
+st.subheader("🔄 전일 대비 변경사항", anchor=False)
+DIFF_PATH = Path("data/diff_report.csv")
+if DIFF_PATH.exists():
+    diff_df = pd.read_csv(DIFF_PATH)
+    if len(diff_df) == 0:
+        st.caption("전일 대비 변경된 자료가 없습니다.")
+    else:
+        new_count = (diff_df["상태"] == "신규").sum()
+        removed_count = (diff_df["상태"] == "삭제됨").sum()
+        changed_count = (diff_df["상태"] == "변경").sum()
+
+        d1, d2, d3, d4 = st.columns(4)
+        d1.metric("신규 자료", f"{new_count}건")
+        d2.metric("삭제된 자료", f"{removed_count}건")
+        d3.metric("수치 변경된 자료", f"{changed_count}건")
+        d4.metric("원본 문항 수 변화", f"{int(diff_df['api_item_count_변화'].sum()):+,}")
+
+        DIFF_RENAME = {
+            "book_id": "자료ID", "textbook_name": "이름", "data_type": "유형",
+            "api_item_count_전일": "문항수(전일)", "api_item_count_오늘": "문항수(오늘)",
+            "api_item_count_변화": "문항수 변화", "review_done_count_변화": "검수완료 변화",
+            "twin_total_변화": "쌍둥이 변화", "similar_total_변화": "유사 변화",
+        }
+        show_cols = list(DIFF_RENAME.keys())[:3] + ["상태"] + list(DIFF_RENAME.keys())[3:]
+        st.dataframe(
+            diff_df[show_cols].rename(columns=DIFF_RENAME),
+            use_container_width=True, hide_index=True,
+        )
+        st.download_button(
+            "⬇ 변경사항 전체 CSV 다운로드",
+            data=diff_df.to_csv(index=False).encode("utf-8-sig"),
+            file_name="전일대비_변경사항.csv",
+            mime="text/csv",
+        )
+else:
+    st.caption("아직 비교할 전일 데이터가 없습니다. (다음 자동 갱신부터 생성됩니다)")
 
 st.divider()
 
