@@ -27,13 +27,17 @@ def load_unified():
 
 
 @st.cache_data(ttl="6h")
-def load_items(data_type, book_id):
+def load_items_full(data_type):
     path = BOOK_ITEMS_PATH if data_type == "교재" else EXAM_ITEMS_PATH
     df = pd.read_csv(path, dtype=str)
-    df = df[df["book_id"] == book_id].copy()
     for c in ["twin_count", "similar_count", "other_relation_count"]:
         df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
     return df
+
+
+def load_items(data_type, book_id):
+    df = load_items_full(data_type)
+    return df[df["book_id"] == book_id].copy()
 
 
 with st.spinner("데이터 불러오는 중..."):
