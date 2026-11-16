@@ -17,7 +17,8 @@ UNIFIED_PATH = "data/unified_summary.csv"
 
 
 @st.cache_data(ttl="6h")
-def load_unified():
+def load_unified(mtime):
+    # mtime은 캐시 키 용도: CSV가 갱신되면 6시간을 기다리지 않고 바로 새로 읽는다.
     df = pd.read_csv(UNIFIED_PATH, dtype=str, keep_default_na=False)
     for c in ["api_item_count", "review_done_count", "review_pending_count", "twin_total", "similar_total"]:
         df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
@@ -26,7 +27,7 @@ def load_unified():
 
 
 with st.spinner("데이터 불러오는 중..."):
-    data = load_unified()
+    data = load_unified(Path(UNIFIED_PATH).stat().st_mtime)
 
 books = data[data["data_type"] == "교재"]
 exams = data[data["data_type"] == "내신"]

@@ -3,6 +3,7 @@
 교재와 내신 시험지를 한 화면에서 같이 검색·필터링한다 (예: 고등만 보기 = 교재+내신 둘 다 포함).
 자료를 선택하면 문항별 상세를 확인한다. 읽기 전용.
 """
+from pathlib import Path
 import pandas as pd
 import plotly.express as px
 import streamlit as st
@@ -18,7 +19,8 @@ EXAM_ITEMS_PATH = "data/step9_all_items.csv"
 
 
 @st.cache_data(ttl="6h")
-def load_unified():
+def load_unified(mtime):
+    # mtime은 캐시 키 용도: CSV가 갱신되면 6시간을 기다리지 않고 바로 새로 읽는다.
     df = pd.read_csv(UNIFIED_PATH, dtype=str, keep_default_na=False)
     for c in ["api_item_count", "review_done_count", "review_pending_count", "twin_total", "similar_total"]:
         df[c] = pd.to_numeric(df[c], errors="coerce").fillna(0).astype(int)
@@ -27,7 +29,7 @@ def load_unified():
 
 
 @st.cache_data(ttl="6h")
-def load_items_full(data_type):
+def load_items_full(data_type, mtime):
     path = BOOK_ITEMS_PATH if data_type == "교재" else EXAM_ITEMS_PATH
     df = pd.read_csv(path, dtype=str)
     for c in ["twin_count", "similar_count", "other_relation_count"]:
@@ -36,12 +38,13 @@ def load_items_full(data_type):
 
 
 def load_items(data_type, book_id):
-    df = load_items_full(data_type)
+    path = BOOK_ITEMS_PATH if data_type == "교재" else EXAM_ITEMS_PATH
+    df = load_items_full(data_type, Path(path).stat().st_mtime)
     return df[df["book_id"] == book_id].copy()
 
 
 with st.spinner("데이터 불러오는 중..."):
-    data = load_unified()
+    data = load_unified(Path(UNIFIED_PATH).stat().st_mtime)
 
 st.title("🔍 교재·시험지 조회", anchor=False)
 st.caption(f"교재 {len(data[data['data_type']=='교재']):,}권 + 내신 시험지 {len(data[data['data_type']=='내신']):,}건 · 통합 조회")
