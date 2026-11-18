@@ -92,13 +92,38 @@ with gcol2:
 
 st.divider()
 
-# ---------- 전일 대비 변경사항 ----------
-st.subheader("🔄 전일 대비 변경사항", anchor=False)
-DIFF_PATH = Path("data/diff_report.csv")
-if DIFF_PATH.exists():
-    diff_df = pd.read_csv(DIFF_PATH)
+# ---------- 갱신일별 변경사항 ----------
+st.subheader("🔄 갱신일별 변경사항", anchor=False)
+HISTORY_DIR = Path("data/diff_history")
+history_files = sorted(HISTORY_DIR.glob("diff_*.csv"), reverse=True) if HISTORY_DIR.exists() else []
+
+
+@st.cache_data(ttl="6h")
+def load_diff(path, mtime):
+    return pd.read_csv(path)
+
+
+def history_label(path):
+    # 파일명(diff_2026-11-13_1204.csv)에서 갱신 시각을, 첫 행에서 비교기준일시를 읽는다.
+    head = pd.read_csv(path, nrows=1)
+    new_at = path.stem.replace("diff_", "").replace("_", " ")
+    new_at = f"{new_at[:13]}:{new_at[13:]}"
+    if len(head):
+        gap = (pd.Timestamp(head["갱신일시"][0]).normalize() - pd.Timestamp(head["비교기준일시"][0]).normalize()).days
+        return f"{new_at} 갱신 ({str(head['비교기준일시'][0])[:16]} 대비 · {gap}일 간격)"
+    return f"{new_at} 갱신 (변경 없음)"
+
+
+if history_files:
+    chosen = st.selectbox("조회할 갱신일", history_files, format_func=history_label)
+    diff_df = load_diff(chosen, chosen.stat().st_mtime)
+    if len(diff_df):
+        st.caption(
+            f"{str(diff_df['비교기준일시'].iloc[0])[:16]} → {str(diff_df['갱신일시'].iloc[0])[:16]} 사이의 변화입니다. "
+            "갱신을 건너뛴 날의 변화는 다음 갱신에 합쳐서 표시되고, 날짜별 중간 상태는 알 수 없습니다."
+        )
     if len(diff_df) == 0:
-        st.caption("전일 대비 변경된 자료가 없습니다.")
+        st.caption("이 갱신에서는 이전 대비 변경된 자료가 없습니다.")
     else:
         new_count = (diff_df["상태"] == "신규").sum()
         removed_count = (diff_df["상태"] == "삭제됨").sum()
@@ -124,11 +149,11 @@ if DIFF_PATH.exists():
         st.download_button(
             "⬇ 변경사항 전체 CSV 다운로드",
             data=diff_df.to_csv(index=False).encode("utf-8-sig"),
-            file_name="전일대비_변경사항.csv",
+            file_name=f"변경사항_{chosen.stem.replace('diff_', '')}.csv",
             mime="text/csv",
         )
 else:
-    st.caption("아직 비교할 전일 데이터가 없습니다. (다음 자동 갱신부터 생성됩니다)")
+    st.caption("아직 비교할 이전 데이터가 없습니다. (다음 갱신부터 생성됩니다)")
 
 st.divider()
 

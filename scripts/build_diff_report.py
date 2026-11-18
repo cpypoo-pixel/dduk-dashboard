@@ -11,6 +11,21 @@ METRICS = ["api_item_count", "review_done_count", "review_pending_count",
            "deleted_count", "twin_total", "similar_total"]
 
 
+HISTORY_DIR = DATA_DIR / "diff_history"
+
+
+def history_filename(new_at):
+    return "diff_" + new_at.replace(" ", "_").replace(":", "")[:15] + ".csv"
+
+
+def write_history(diff_df, prev_at, new_at):
+    HISTORY_DIR.mkdir(exist_ok=True)
+    out = diff_df.copy()
+    out.insert(0, "비교기준일시", prev_at)
+    out.insert(0, "갱신일시", new_at)
+    out.to_csv(HISTORY_DIR / history_filename(new_at), index=False, encoding="utf-8-sig")
+
+
 def main():
     prev_path = DATA_DIR / "unified_summary_prev.csv"
     new_path = DATA_DIR / "unified_summary.csv"
@@ -19,8 +34,12 @@ def main():
         return
 
     cols = ["book_id", "textbook_name", "data_type"] + METRICS
-    prev = pd.read_csv(prev_path)[cols]
-    new = pd.read_csv(new_path)[cols]
+    prev_full = pd.read_csv(prev_path)
+    new_full = pd.read_csv(new_path)
+    prev_at = str(prev_full["collected_at"].max())
+    new_at = str(new_full["collected_at"].max())
+    prev = prev_full[cols]
+    new = new_full[cols]
 
     merged = prev.merge(new, on="book_id", how="outer", suffixes=("_전일", "_오늘"), indicator=True)
     merged["textbook_name"] = merged["textbook_name_오늘"].fillna(merged["textbook_name_전일"])
@@ -42,6 +61,11 @@ def main():
     diff_df = merged.loc[changed_mask, out_cols].copy()
     diff_df.loc[diff_df["상태"] == "기존", "상태"] = "변경"
     diff_df.to_csv(DATA_DIR / "diff_report.csv", index=False, encoding="utf-8-sig")
+
+    # 갱신일별 조회용 이력: 갱신 시각마다 파일을 하나씩 남긴다 (하루 평균 수십 KB).
+    # 며칠 건너뛰고 갱신하면 그 사이 변화가 한 파일에 합쳐지므로 비교기준일시를 함께 기록한다.
+    if prev_at != new_at:
+        write_history(diff_df, prev_at, new_at)
 
     new_count = (diff_df["상태"] == "신규").sum()
     removed_count = (diff_df["상태"] == "삭제됨").sum()

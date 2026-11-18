@@ -122,6 +122,7 @@ def push_to_github():
         "data/step8_all_items.csv",
         "data/step9_all_items.csv",
         "data/diff_report.csv",
+        "data/diff_history",
     ]
     data_files = [f for f in data_files if (BASE_DIR / f).exists()]
     git = lambda *args: subprocess.run(["git", *args], cwd=str(BASE_DIR), capture_output=True, text=True, encoding="utf-8")
