@@ -5,8 +5,8 @@ __pycache__/
 
 data/*
 !data/unified_summary.csv
-!data/step8_all_items.csv
-!data/step9_all_items.csv
+!data/items_book.csv
+!data/items_exam.csv
 !data/diff_report.csv
 !data/diff_history/
 !data/diff_history/*.csv

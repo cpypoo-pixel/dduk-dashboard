@@ -105,6 +105,14 @@ def main():
     subprocess.run([PYTHON, str(SCRIPTS_DIR / "enrich_exam_summary.py")], cwd=str(BASE_DIR), check=False)
     subprocess.run([PYTHON, str(SCRIPTS_DIR / "build_unified_data.py")], cwd=str(BASE_DIR), check=False)
 
+    log("[슬림] 배포용 문항 파일 생성 (반복되는 열 제거)")
+    slim_result = subprocess.run([PYTHON, str(SCRIPTS_DIR / "build_slim_items.py")], cwd=str(BASE_DIR),
+                                 capture_output=True, text=True, encoding="utf-8")
+    log(slim_result.stdout.strip() if slim_result.stdout else "(슬림 출력 없음)")
+    if slim_result.returncode != 0:
+        log(f"[중단] 슬림 파일 생성 실패 - 오래된 배포 파일이 올라가지 않도록 GitHub 푸시를 건너뜁니다: {slim_result.stderr.strip()[-300:]}")
+        return
+
     log("[비교] 전일 대비 변경사항 리포트 생성")
     diff_result = subprocess.run([PYTHON, str(SCRIPTS_DIR / "build_diff_report.py")], cwd=str(BASE_DIR),
                                   capture_output=True, text=True, encoding="utf-8")
@@ -119,8 +127,8 @@ def push_to_github():
     """새로 수집된 데이터를 GitHub(dduk-dashboard)에 올려 배포본(Streamlit Cloud)도 자동 갱신되게 한다."""
     data_files = [
         "data/unified_summary.csv",
-        "data/step8_all_items.csv",
-        "data/step9_all_items.csv",
+        "data/items_book.csv",
+        "data/items_exam.csv",
         "data/diff_report.csv",
         "data/diff_history",
     ]

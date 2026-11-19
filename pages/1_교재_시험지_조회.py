@@ -14,8 +14,9 @@ require_login()
 inject_style()
 
 UNIFIED_PATH = "data/unified_summary.csv"
-BOOK_ITEMS_PATH = "data/step8_all_items.csv"
-EXAM_ITEMS_PATH = "data/step9_all_items.csv"
+# 용량을 줄이려고 자료마다 같은 열(textbook_name, sheet, collected_at)은 빼고 저장한다. (scripts/build_slim_items.py)
+BOOK_ITEMS_PATH = "data/items_book.csv"
+EXAM_ITEMS_PATH = "data/items_exam.csv"
 
 
 @st.cache_data(ttl="6h")
@@ -192,6 +193,10 @@ else:
 
     with st.spinner("문항 상세 불러오는 중..."):
         book_items = load_items(data_type, book_id)
+        # 슬림 파일에서 빠진 열을 자료 목록에서 다시 붙인다 (다운로드 CSV 열 구성은 예전과 같게 유지).
+        book_items.insert(1, "textbook_name", pick_row["textbook_name"])
+        book_items.insert(2, "sheet", pick_row["sheet"])
+        book_items["collected_at"] = pick_row["collected_at"]
         book_items["page_num"] = pd.to_numeric(book_items["page"], errors="coerce")
         book_items["item_num_sort"] = pd.to_numeric(book_items["item_num"], errors="coerce")
         book_items = book_items.sort_values(["page_num", "item_num_sort"])
